@@ -1,0 +1,16 @@
+{
+  "platforms": [
+    {
+      "platform": "TuyaThermostatPluginWithWebHooks",
+      "devices": [
+        {
+          "name": "Thermostat",
+          "id": "<id>",
+          "key": "<local_key>",
+          "disableAfterSeconds": 5000
+        }
+      ],
+      "httpPort": 9990
+    }
+  ]
+}

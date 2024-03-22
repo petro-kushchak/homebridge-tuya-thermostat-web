@@ -1,14 +1,14 @@
 {
-  "displayName": "Homebridge Tuya Thermostat",
-  "name": "homebridge-tuya-thermostat",
-  "version": "0.1.6",
+  "displayName": "Homebridge Tuya Thermostat with Web Hooks",
+  "name": "homebridge-tuya-thermostat-web",
+  "version": "0.0.13",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/snicol/homebridge-tuya-thermostat.git"
+    "url": "https://github.com/petro-kushchak/homebridge-tuya-thermostat.git"
   },
   "bugs": {
-    "url": "https://github.com/snicol/homebridge-tuya-thermostat/issues"
+    "url": "https://github.com/petro-kushchak/homebridge-tuya-thermostat/issues"
   },
   "engines": {
     "node": ">=14.18.1",
@@ -17,15 +17,16 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint src/**.ts --max-warnings=0",
-    "watch": "yarn build && yarn link && nodemon",
+    "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
-    "prepublishOnly": "yarn lint && yarn build"
+    "prepublishOnly": "npm run lint && npm run build",
+    "e2e": "npm run build && node dist/e2e/test_e2e.js"
   },
   "keywords": [
     "homebridge-plugin"
   ],
   "dependencies": {
-    "tuyapi": "^7.2.0"
+    "tuyapi": "^7.5.2"
   },
   "devDependencies": {
     "@types/node": "^16.10.9",
@@ -37,5 +38,8 @@
     "rimraf": "^3.0.2",
     "ts-node": "^10.3.0",
     "typescript": "^4.4.4"
+  },
+  "publishConfig": {
+    "@petro-kushchak:registry": "https://registry.npmjs.org/"
   }
 }

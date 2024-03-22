@@ -1,11 +1,17 @@
 {
-  "pluginAlias": "TuyaThermostatPlugin",
+  "pluginAlias": "TuyaThermostatPluginWithWebHooks",
   "pluginType": "platform",
   "singular": true,
   "schema": {
     "type": "object",
 
     "properties": {
+      "httpPort": {
+        "title": "HTTP port (for web hooks)",
+        "type": "number",
+        "required": false,
+        "default": "9990"
+      },
       "devices": {
         "type": "array",
 
@@ -13,27 +19,25 @@
           "type": "object",
           "additionalProperties": false,
 
-          "required": [
-            "name",
-            "id",
-            "key"
-          ],
-
           "properties": {
             "name": {
-              "type": "string"
+              "type": "string",
+              "required": true
             },
 
             "id": {
-              "type": "string"
+              "type": "string",
+              "required": true
             },
 
             "key": {
-              "type": "string"
+              "type": "string",
+              "required": true
             },
 
             "disableAfterSeconds": {
-              "type": "number"
+              "type": "number",
+              "required": false
             }
           }
         }

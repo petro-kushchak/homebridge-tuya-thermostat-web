@@ -2,6 +2,7 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, 
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { TuyaThermostatAccessory } from './platformAccessory';
+import { AutomationReturn, HttpService } from './lib/services/httpService';
 
 interface DeviceConfig {
   name: string;
@@ -13,7 +14,6 @@ interface DeviceConfig {
 export interface Device extends DeviceConfig {
   uuid: string;
   state: boolean;
-  isWarming: boolean;
   currentTemp: number;
   targetTemp: number;
   heatingSince?: number;
@@ -25,6 +25,8 @@ export class TuyaHomebridgePlatform implements DynamicPlatformPlugin {
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
+  private readonly registeredDevices: TuyaThermostatAccessory[] = [];
+  private readonly httpService: HttpService;
 
   constructor(
     public readonly log: Logger,
@@ -38,6 +40,11 @@ export class TuyaHomebridgePlatform implements DynamicPlatformPlugin {
       // run the method to discover / register your devices as accessories
       this.discoverDevices();
     });
+
+    const httpPort = this.config.httpPort | 9990;
+    this.log.info('Starting http service on port:', httpPort);
+    this.httpService = new HttpService(httpPort, this.log);
+    this.httpService.start((uri: string) => this.httpHandler(uri));
   }
 
   /**
@@ -73,7 +80,7 @@ export class TuyaHomebridgePlatform implements DynamicPlatformPlugin {
         existingAccessory.context.device = device;
         this.api.updatePlatformAccessories([existingAccessory]);
 
-        new TuyaThermostatAccessory(this, existingAccessory);
+        this.registeredDevices.push(new TuyaThermostatAccessory(this, existingAccessory));
         continue;
       }
 
@@ -83,9 +90,64 @@ export class TuyaHomebridgePlatform implements DynamicPlatformPlugin {
 
       accessory.context.device = device;
 
-      new TuyaThermostatAccessory(this, accessory);
-
+      this.registeredDevices.push(new TuyaThermostatAccessory(this, accessory));
       this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
     }
+  }
+
+
+  httpHandler(uri: string): AutomationReturn {
+    this.log.info(`Received request: ${uri}`);
+
+    const parts = uri.split('/');
+
+    if (parts.length < 3) {
+      return {
+        error: true,
+        message: 'Malformed uri',
+      };
+    }
+
+    // update accessory temp value
+    // uri example: /temp/<ac-id>/22.5%C2%B0C
+    // usually due to HomeKit automation when original uri is /temp/123/22.5C
+
+    if (parts[1] === 'temp') {
+      const deviceId = parts[2];
+      const device = this.registeredDevices.find((plat) => {
+        this.log.info(`registeredDevices: ${plat.getDeviceId()} `);
+
+        return plat.getDeviceId() === deviceId;
+      });
+
+      this.log.info(`URL parts: device: ${deviceId} temp: ${parts[3]}`);
+
+      if (!device) {
+        this.log.info(`Device id: ${deviceId} not found`);
+        return {
+          error: false,
+          message: `Device id: ${deviceId} not found`,
+        };
+      }
+
+      const tempParts = parts[3].split('%');
+      if (tempParts.length > 0) {
+        //replace with "." in case if HomeKit automation sends "," in temperature value
+        const temp = '' + tempParts[0].replace(',', '.');
+        device?.setCurrentTemperature(Number(temp));
+
+        const message = `Updated accessory ${deviceId} current temperature to: ${temp}`;
+        this.log.info(message);
+        return {
+          error: false,
+          message: message,
+        };
+      }
+    }
+
+    return {
+      error: false,
+      message: 'OK',
+    };
   }
 }
